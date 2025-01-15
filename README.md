@@ -52,4 +52,8 @@ http://localhost:5000
 
 ## Licença
 
-MIT
+Todos os direitos reservados
+
+## Render.com
+Build Command: pip install -r requirements.txt
+Start command: gunicorn app:app
