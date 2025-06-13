@@ -2,7 +2,7 @@ import os
 from flask import Flask, render_template, request, jsonify
 import speech_recognition as sr
 from pydub import AudioSegment
-from moviepy.editor import VideoFileClip
+from moviepy import VideoFileClip
 import tempfile
 
 app = Flask(__name__)
@@ -17,8 +17,15 @@ def allowed_file(filename):
 def converter_para_wav(file_path):
     wav_path = os.path.join(app.config['UPLOAD_FOLDER'], 'temp_audio.wav')
     if file_path.lower().endswith(('.mp4', '.avi', '.mov', '.mkv')):
-        video = VideoFileClip(file_path)
-        video.audio.write_audiofile(wav_path, codec='pcm_s16le')
+        try:
+            with VideoFileClip(file_path) as video:
+                if video.audio:
+                    video.audio.write_audiofile(wav_path, codec='pcm_s16le')
+                else:
+                    raise ValueError("Video file does not contain an audio track.")
+        except Exception as e:
+            # Propagate error to be handled by the caller
+            raise e
     else:
         audio = AudioSegment.from_file(file_path)
         audio.export(wav_path, format="wav")

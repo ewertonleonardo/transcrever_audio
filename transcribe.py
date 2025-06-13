@@ -2,7 +2,7 @@ import os
 import datetime
 import speech_recognition as sr
 from pydub import AudioSegment
-from moviepy.editor import VideoFileClip
+from moviepy import VideoFileClip
 from colorama import just_fix_windows_console, Fore, Style
 
 # Ativa o suporte a ANSI no Windows
@@ -41,8 +41,16 @@ def converter_para_wav(file_path):
     log_message(file_path, Fore.LIGHTWHITE_EX, newline_before=False, newline_after=False)
     wav_path = file_path.replace(file_path.split('.')[-1], 'wav')
     if file_path.lower().endswith(('.mp4', '.avi', '.mov', '.mkv')):
-        video = VideoFileClip(file_path)
-        video.audio.write_audiofile(wav_path, codec='pcm_s16le')
+        try:
+            with VideoFileClip(file_path) as video:
+                if video.audio:
+                    video.audio.write_audiofile(wav_path, codec='pcm_s16le')
+                else:
+                    log_message(f"Video file {os.path.basename(file_path)} has no audio track. Skipping.", Fore.YELLOW_EX)
+                    return None # Indicate failure to create wav_path
+        except Exception as e:
+            log_message(f"Error processing video {os.path.basename(file_path)} with MoviePy: {e}. Skipping.", Fore.RED_EX)
+            return None # Indicate failure
     else:
         audio = AudioSegment.from_file(file_path)
         audio.export(wav_path, format="wav")
@@ -70,12 +78,13 @@ def processar_arquivos_na_pasta(base_path):
             wav_path = converter_para_wav(file_path)
             
             # Realiza a transcrição
-            log_message("PROCESSANDO:", Fore.LIGHTMAGENTA_EX, newline_before=True, newline_after=False)
-            log_message(filename, Fore.LIGHTWHITE_EX, newline_before=False)
-            texto_transcricao = transcrever_audio(wav_path)
-            
-            if texto_transcricao:
-                output_path = os.path.join(base_path, f"{nome_base}.md")
+            if wav_path: # This existing check will handle the None return
+                log_message("PROCESSANDO:", Fore.LIGHTMAGENTA_EX, newline_before=True, newline_after=False)
+                log_message(filename, Fore.LIGHTWHITE_EX, newline_before=False)
+                texto_transcricao = transcrever_audio(wav_path)
+
+                if texto_transcricao:
+                    output_path = os.path.join(base_path, f"{nome_base}.md")
                 with open(output_path, "w", encoding="utf-8") as f:
                     f.write(f"# Transcrição do arquivo: {filename}\n\n")
                     f.write(texto_transcricao)
