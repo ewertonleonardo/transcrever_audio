@@ -1,59 +1,61 @@
-# Transcrição de Áudio para Texto
+# Transcrever Áudio
 
-Uma aplicação web para transcrição de áudio e vídeo para texto usando Python, Flask e Google Speech Recognition.
+Aplicativo para transcrição de áudio e vídeo em português usando Whisper.
 
-## Funcionalidades
+## 📦 Dependências
 
-- Upload de arquivos de áudio/vídeo via interface web
-- Suporte para múltiplos formatos (.wav, .mp3, .flac, .opus, .mp4, .avi, .mov, .mkv)
-- Transcrição automática usando Google Speech Recognition
-- Interface moderna e responsiva
-- Funcionalidade de copiar texto com um clique
+- Python 3.13+
+- Bibliotecas:
+  - `faster-whisper`: Transcrição de áudio
+  - `librosa` + `soundfile`: Processamento de áudio
+  - `moviepy`: Processamento de vídeo
+  - `flask`: Interface web
+  - `colorama`: Cores no terminal
 
-## Requisitos
+## 🚀 Como Usar
 
-- Python 3.12+
-- Flask
-- SpeechRecognition
-- pydub
-- moviepy
-- colorama
+1. Instale as dependências:
 
-## Instalação
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-1. Clone o repositório:
-```bash
-git clone [URL_DO_SEU_REPOSITORIO]
-cd [NOME_DO_REPOSITORIO]
-```
+2. Para usar a interface web:
 
-2. Instale as dependências:
-```bash
-pip install -r requirements.txt
-```
+   ```bash
+   python app.py
+   ```
 
-3. Execute a aplicação:
-```bash
-python app.py
-```
+   Acesse: <http://localhost:5000>
 
-4. Acesse no navegador:
-```
-http://localhost:5000
-```
+3. Para usar o script de linha de comando:
 
-## Uso
+   ```bash
+   python transcribe.py
+   ```
 
-1. Acesse a aplicação pelo navegador
-2. Arraste e solte um arquivo de áudio/vídeo ou clique para selecionar
-3. Aguarde o processamento
-4. O texto transcrito será exibido na tela
-5. Use o botão "Copiar" para copiar o texto para a área de transferência
+   Os arquivos devem estar na pasta `source`.
+
+## ✅ Formatos Suportados
+
+- Áudio: WAV, MP3, FLAC, OPUS
+- Vídeo: MP4, AVI, MOV, MKV
+
+## 🔧 Arquivos de Configuração
+
+- `gunicorn.conf.py`: Configuração do servidor web
+
+## 📝 Notas
+
+- Otimizado para Python 3.13
+- Não requer FFmpeg instalado
+- Modelo Whisper base (145MB) carregado automaticamente
 
 ## Licença
 
 Todos os direitos reservados
 
 ## Render.com
+
 Build Command: pip install -r requirements.txt
 Start command: gunicorn app:app

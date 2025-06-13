@@ -1,12 +1,16 @@
 import os
 import datetime
-import speech_recognition as sr
-from pydub import AudioSegment
+from faster_whisper import WhisperModel
+import librosa
+import soundfile as sf
 from moviepy.editor import VideoFileClip
 from colorama import just_fix_windows_console, Fore, Style
 
 # Ativa o suporte a ANSI no Windows
 just_fix_windows_console()
+
+# Carrega o modelo Whisper (usando modelo base para melhor performance)
+modelo_whisper = WhisperModel("base", device="cpu", compute_type="int8")
 
 # Caminho da pasta "source" onde estão os vídeos e áudios (agora ajustado para `TranscriptLocal/source`)
 source_path = os.path.join(os.getcwd(), "source")
@@ -23,29 +27,37 @@ def log_message(message, color, newline_before=True, newline_after=True):
     if newline_after:
         print()  # Quebra de linha depois
 
-# Função para transcrever áudio usando Google Speech API
+# Função para transcrever áudio usando Faster Whisper
 def transcrever_audio(audio_path):
-    recognizer = sr.Recognizer()
-    with sr.AudioFile(audio_path) as source:
-        audio_data = recognizer.record(source)
     try:
-        texto = recognizer.recognize_google(audio_data, language='pt-BR')
-        return texto.strip()
+        segments, info = modelo_whisper.transcribe(audio_path, language='pt')
+        texto_completo = ""
+        for segment in segments:
+            texto_completo += segment.text + " "
+        return texto_completo.strip()
     except Exception as e:
-        log_message(f"Erro ao transcrever com Google: {e}", Fore.LIGHTRED_EX)
+        log_message(f"Erro ao transcrever com Faster Whisper: {e}", Fore.LIGHTRED_EX)
         return None
 
-# Função para converter formatos de áudio e vídeo para WAV
+# Função para converter formatos de áudio e vídeo para WAV usando librosa
 def converter_para_wav(file_path):
     log_message("CONVERSÃO PARA WAV", Fore.LIGHTMAGENTA_EX, newline_before=False)
     log_message(file_path, Fore.LIGHTWHITE_EX, newline_before=False, newline_after=False)
     wav_path = file_path.replace(file_path.split('.')[-1], 'wav')
-    if file_path.lower().endswith(('.mp4', '.avi', '.mov', '.mkv')):
-        video = VideoFileClip(file_path)
-        video.audio.write_audiofile(wav_path, codec='pcm_s16le')
-    else:
-        audio = AudioSegment.from_file(file_path)
-        audio.export(wav_path, format="wav")
+    
+    try:
+        if file_path.lower().endswith(('.mp4', '.avi', '.mov', '.mkv')):
+            # Para vídeos, usa moviepy
+            video = VideoFileClip(file_path)
+            video.audio.write_audiofile(wav_path, codec='pcm_s16le')
+        else:
+            # Para áudios, usa librosa
+            audio_data, sample_rate = librosa.load(file_path, sr=16000)
+            sf.write(wav_path, audio_data, sample_rate)
+    except Exception as e:
+        log_message(f"Erro na conversão: {e}", Fore.LIGHTRED_EX)
+        return None
+    
     return wav_path
 
 # Função principal para processar todos os arquivos na pasta "source"

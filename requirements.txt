@@ -1,6 +1,9 @@
 flask==3.0.0
-SpeechRecognition==3.10.0
-pydub==0.25.1
+faster-whisper
+librosa
+soundfile
 moviepy==1.0.3
 colorama==0.4.6
 gunicorn==21.2.0
+torch
+torchaudio

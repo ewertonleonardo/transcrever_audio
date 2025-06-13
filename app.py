@@ -1,13 +1,17 @@
 import os
 from flask import Flask, render_template, request, jsonify
-import speech_recognition as sr
-from pydub import AudioSegment
+from faster_whisper import WhisperModel
+import librosa
+import soundfile as sf
 from moviepy.editor import VideoFileClip
 import tempfile
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max-limit
 app.config['UPLOAD_FOLDER'] = tempfile.gettempdir()
+
+# Carrega o modelo Whisper
+modelo_whisper = WhisperModel("base", device="cpu", compute_type="int8")
 
 ALLOWED_EXTENSIONS = {'wav', 'mp3', 'flac', 'opus', 'mp4', 'avi', 'mov', 'mkv'}
 
@@ -16,21 +20,28 @@ def allowed_file(filename):
 
 def converter_para_wav(file_path):
     wav_path = os.path.join(app.config['UPLOAD_FOLDER'], 'temp_audio.wav')
-    if file_path.lower().endswith(('.mp4', '.avi', '.mov', '.mkv')):
-        video = VideoFileClip(file_path)
-        video.audio.write_audiofile(wav_path, codec='pcm_s16le')
-    else:
-        audio = AudioSegment.from_file(file_path)
-        audio.export(wav_path, format="wav")
+    
+    try:
+        if file_path.lower().endswith(('.mp4', '.avi', '.mov', '.mkv')):
+            # Para vídeos, usa moviepy
+            video = VideoFileClip(file_path)
+            video.audio.write_audiofile(wav_path, codec='pcm_s16le')
+        else:
+            # Para áudios, usa librosa
+            audio_data, sample_rate = librosa.load(file_path, sr=16000)
+            sf.write(wav_path, audio_data, sample_rate)
+    except Exception as e:
+        raise Exception(f"Erro na conversão: {str(e)}")
+    
     return wav_path
 
 def transcrever_audio(audio_path):
-    recognizer = sr.Recognizer()
-    with sr.AudioFile(audio_path) as source:
-        audio_data = recognizer.record(source)
     try:
-        texto = recognizer.recognize_google(audio_data, language='pt-BR')
-        return texto.strip()
+        segments, info = modelo_whisper.transcribe(audio_path, language='pt')
+        texto_completo = ""
+        for segment in segments:
+            texto_completo += segment.text + " "
+        return texto_completo.strip()
     except Exception as e:
         return f"Erro na transcrição: {str(e)}"
 
